@@ -12,13 +12,22 @@
  * undead
  * vampire
  */
+
+const types = ['bowman', 'swordsman', 'magician', 'daemon', 'undead', 'vampire'];
+
 export default class Character {
-  constructor(level, type = 'generic') {
+  constructor(level, attack, defence, health, type = new.target.name.toLocaleLowerCase()) {
+    if (typeof (type) === 'string' && types.includes(type)) {
+      this.type = type;
+    } else {
+      throw new Error('Недопустимый тип данных либо недопустимый тип героя');
+    }
+    this.health = health;
     this.level = level;
-    this.attack = 0;
-    this.defence = 0;
-    this.health = 50;
-    this.type = type;
-    // TODO: выбросите исключение, если кто-то использует "new Character()"
+    this.attack = attack;
+    this.defence = defence;
+    if (new.target.name === 'Character') {
+      throw "It's basic class must use new operator with a Person";
+    }
   }
 }
