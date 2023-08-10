@@ -1,7 +1,9 @@
 import themes from './themes';
 import { teamPlayer, teamRival } from './generators';
 import PositionedCharacter from './PositionedCharacter';
+import GamePlay from './GamePlay';
 
+const gamePlay = new GamePlay();
 const fieldSize = 8;
 let positionedChar =[];
 // numbColumn для 1,2 столбца равно 0, для 6,7 равно 6
@@ -43,14 +45,18 @@ export default class GameController {
   }
 
   onCellEnter(index) {
+    function wrap (){
       debugger
+      console.log(this);
       if (this.gamePlay.cells[index].querySelector('.character')){
-        console.log('ffff')
-        this.gamePlay.showCellTooltip()
+        console.log('ffff');
+        // this.gamePlay.showCellTooltip();
       }
-
+    }
+    //изначально вариант был const callWrap = wrap.bind(GameController)
+    const callWrap = wrap.bind(new GameController); 
+    callWrap();   
   }
-
   onCellLeave(index) {
     // TODO: react to mouse leave
   }
