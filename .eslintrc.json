@@ -6,10 +6,12 @@
      "jest": true
   },
   "rules": {
+    "linebreak-style": "off",
     "no-restricted-syntax": [
       "error",
       "LabeledStatement",
       "WithStatement"
     ]
   }
+  
 }

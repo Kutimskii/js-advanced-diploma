@@ -16,7 +16,7 @@
 const types = ['bowman', 'swordsman', 'magician', 'daemon', 'undead', 'vampire'];
 
 export default class Character {
-  constructor(level, attack, defence, health, type = new.target.name.toLocaleLowerCase()) {
+  constructor(level, attack, defence, health = 100, type = new.target.name.toLocaleLowerCase()) {
     if (typeof (type) === 'string' && types.includes(type)) {
       this.type = type;
     } else {
@@ -27,7 +27,7 @@ export default class Character {
     this.attack = attack;
     this.defence = defence;
     if (new.target.name === 'Character') {
-      throw "It's basic class must use new operator with a Person";
+      throw new Error('Its basic class must use new operator with a Person');
     }
   }
 }
