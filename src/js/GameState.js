@@ -1,7 +1,8 @@
 export default class GameState {
-  static from(object) {
+  static from(player,positions) {
     const state = {
-      player: true,
+      player: player,
+      positions: positions,
     };
     return state;
   }

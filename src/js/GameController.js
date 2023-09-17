@@ -1,5 +1,5 @@
 import themes from './themes';
-import { teamPlayer, teamRival } from './generators';
+import { teamPlayer, teamRival,playerTypes,rivalTypes,maxLevel,generateTeam} from './generators';
 import PositionedCharacter from './PositionedCharacter';
 import GameState from './GameState';
 import GamePlay from './GamePlay';
@@ -37,31 +37,31 @@ export default class GameController {
     this.onCellLeave = this.onCellLeave.bind(this);
     this.onCellClick = this.onCellClick.bind(this);
     this.stepOfComputer = this.stepOfComputer.bind(this)
-    this.state = GameState.from();
+    this.state = GameState.from(true,positions);
     this.selectedCell = null;
     this.allowedTeam = [];
     this.personIntoActiveCell = [];
     this.selectedCharacter = [];
     this.stateOfMovement = null;
     this.damage= 0;
+    this.level = 1;
   }
-
   init() {
     this.gamePlay.drawUi(themes.prairie);
     this.gamePlay.redrawPositions(positions);
     this.makeSubscribe();
-    GameState.from();
+    GameState.from(true,positions);
   }
 
   onCellClick(index) {
-   
+    console.log(generateTeam(rivalTypes,maxLevel,3))
     let isRightType= [];;
     if (this.state.player) {
       this.allowedTeam = teamPlayer.characters.map((el) => el.type);
     } else {
       this.allowedTeam = teamRival.characters.map((el) => el.type);
     }
-
+// Step
     if (this.stateOfMovement==='move' && this.selectedCell !== null) {
       positions.forEach((item) => {
         if (item.position === this.selectedCell) {
@@ -71,6 +71,7 @@ export default class GameController {
       this.state.player === true ? this.state.player = false : this.state.player=true ;
       this.gamePlay.deselectCell(this.selectedCell)
       this.selectedCell = null;
+      GameState.from(this.state.player,positions)
       if(!this.state.player) {
         this.gamePlay.redrawPositions(positions)
         return setTimeout(this.stepOfComputer,1000)
@@ -79,11 +80,11 @@ export default class GameController {
         return this.gamePlay.redrawPositions(positions)
       }
     }
+// Attack
     if(this.stateOfMovement==='attack' && this.selectedCell !== null){
       this.damage = Math.max(this.selectedCharacter[0].character.attack - this.personIntoActiveCell[0].character.defence, this.selectedCharacter[0].character.attack * 0.1)
       this.state.player === true ? this.state.player = false : this.state.player=true ;
       this.gamePlay.deselectCell(this.selectedCell)
-      
       this.selectedCell = null;
       this.gamePlay.showDamage(this.activeCell,this.damage).then(() => {
         positions.forEach((item) => {
@@ -92,9 +93,9 @@ export default class GameController {
           }
         })
         positions = positions.filter(item => item.character.health > 0)
+        GameState.from(this.state.player,positions)
         return this.gamePlay.redrawPositions(positions)
-      }      
-      )
+      })
       if(!this.state.player) {
         return setTimeout(this.stepOfComputer,1000)
       } else {
@@ -249,6 +250,9 @@ export default class GameController {
       || item.character.type === "daemon" && item.character.health > 0
       || item.character.type === "undead" && item.character.health > 0
       })
+      if (team.length === 0)  {
+        this.nextLevel
+      }
     let random = team.findIndex((item)=> {
         return item.character.health <=100 && item.character.health > 0;
       })
@@ -311,5 +315,19 @@ export default class GameController {
       }
     }
       return this.onCellClick(this.activeCell)
+  }
+  nextLevel(){
+    switch(this.level){
+      case 2:
+        this.gamePlay.drawUi(themes.desert);
+        break;
+      case 3:
+        this.gamePlay.drawUi(themes.arctic);
+        break;
+      case 4:
+        this.gamePlay.drawUi(themes.mountain);
+        break;
+    }
+
   }
 }
