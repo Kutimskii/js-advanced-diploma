@@ -40,8 +40,5 @@ export function generateTeam(allowedTypes, maxLevel, characterCount) {
   }
   return new Team(characters);
 }
-export let maxLevel = 1;
 export const playerTypes = [Bowman, Swordsman, Magician]; // доступные классы игрока
-export const teamPlayer = generateTeam(playerTypes, maxLevel, 3);
 export const rivalTypes = [Vampire, Undead, Daemon];
-export const teamRival = generateTeam(rivalTypes, maxLevel, 3);
