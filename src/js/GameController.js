@@ -85,8 +85,10 @@ export default class GameController {
           item.position = this.activeCell;
         }
       });
-
-      this.state.player === true ? this.state.player = false : this.state.player = true;
+      if (this.state.player) {
+        this.state.player = false;
+      } else this.state.player = true;
+      // this.state.player === true ? this.state.player = false : this.state.player = true;
       this.gamePlay.deselectCell(this.selectedCell);
       this.selectedCell = null;
       GameState.from(this.state.player, this.positionsToDraw, this.theme, this.level);
@@ -104,7 +106,10 @@ export default class GameController {
       - this.personIntoActiveCell[0].character.defence,
         this.selectedCharacter[0].character.attack * 0.1,
       ));
-      this.state.player === true ? this.state.player = false : this.state.player = true;
+      if (this.state.player) {
+        this.state.player = false;
+      } else this.state.player = true;
+      // this.state.player === true ? this.state.player = false : this.state.player = true;
       this.gamePlay.deselectCell(this.selectedCell);
       this.selectedCell = null;
       this.gamePlay.showDamage(this.activeCell, this.damage).then(() => {
@@ -210,7 +215,7 @@ export default class GameController {
   }
 
   makeAttackStep(selectedPerson, activeCell, testType) {
-    if (selectedPerson === null || !this.gamePlay.cells[selectedPerson].getElementsByClassName('character').length >= 1) {
+    if (selectedPerson === null || !this.selectedCharacter.length>=1) {
       return {
         step: false,
         attack: false,
@@ -300,6 +305,7 @@ export default class GameController {
       item.diagonal = Math.abs(team[random].row - item.row)
       + Math.abs(team[random].column - item.column);
     });
+    debugger
     const target = humanTeam.reduce((min, num) => (min.diagonal < num.diagonal ? min : num));
     target.positionTarget = target.position;
     this.onCellEnter(team[random].position);
@@ -421,10 +427,12 @@ export default class GameController {
   }
 
   loadGame() {
-    this.state = this.stateService.load();
-    this.state.player = true;
-    if (!this.state) {
+    if (!this.stateService.load()) {
+      this.state.player = true;
       return GamePlay.showError('ВНИМАНИЕ! Нет игры для загрузки!');
+    } else {
+      this.state = this.stateService.load()
+      this.state.player = true;
     }
     this.level = this.state.level;
     this.positionsToDraw = this.state.positions;

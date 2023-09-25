@@ -1,8 +1,9 @@
 import Character from '../Character';
 
 export default class Undead extends Character {
-  constructor(level, type, health = 100) {
+  constructor(level, health = 100, type= 'undead') {
     super(level, health, type);
+    this.type = type;
     this.attack = 40;
     this.level = level;
     this.defence = 10;
