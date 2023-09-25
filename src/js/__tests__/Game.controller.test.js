@@ -10,9 +10,9 @@ test('test GameController infoAbout', () => {
 
 test('test GameController makeAttackandStep 1', () => {
   const GameControl = new GameController();
-  GameControl.selectedCharacter = [0]
+  GameControl.selectedCharacter = [0];
   const result = GameControl.makeAttackStep(25, 32, 'magician');
-  expect(result).toEqual({attack: true, step: true });
+  expect(result).toEqual({ attack: true, step: true });
 });
 
 test.each([
@@ -21,7 +21,7 @@ test.each([
   [9, 12, 'magician', { attack: true, step: false }],
 ])('test GameController makeAttackandStep', (selectedCell, activeCell, typeOfCharacter, expected) => {
   const GameControl = new GameController();
-  GameControl.selectedCharacter = [0]
+  GameControl.selectedCharacter = [0];
   const result = GameControl.makeAttackStep(selectedCell, activeCell, typeOfCharacter);
   expect(result).toEqual(expected);
 });

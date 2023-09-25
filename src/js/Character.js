@@ -13,7 +13,7 @@
  * vampire
  */
 
-const types = ['bowman', 'swordsman', 'magician', 'daemon', 'undead', 'vampire'];
+// const types = ['bowman', 'swordsman', 'magician', 'daemon', 'undead', 'vampire'];
 export default class Character {
   constructor(level, attack, defence, health = 100, type = 'generic') {
     // if (typeof (type) === 'string' && types.includes(type)) {
@@ -21,8 +21,8 @@ export default class Character {
     // } else {
     //   throw new Error('Недопустимый тип данных либо недопустимый тип героя');
     // }
-    debugger
-    this.type = type
+    // debugger;
+    this.type = type;
     this.health = health;
     this.level = level;
     this.attack = attack;

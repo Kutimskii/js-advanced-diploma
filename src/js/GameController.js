@@ -215,7 +215,7 @@ export default class GameController {
   }
 
   makeAttackStep(selectedPerson, activeCell, testType) {
-    if (selectedPerson === null || !this.selectedCharacter.length>=1) {
+    if (selectedPerson === null || !this.selectedCharacter.length >= 1) {
       return {
         step: false,
         attack: false,
@@ -305,7 +305,7 @@ export default class GameController {
       item.diagonal = Math.abs(team[random].row - item.row)
       + Math.abs(team[random].column - item.column);
     });
-    debugger
+    // debugger;
     const target = humanTeam.reduce((min, num) => (min.diagonal < num.diagonal ? min : num));
     target.positionTarget = target.position;
     this.onCellEnter(team[random].position);
@@ -430,10 +430,10 @@ export default class GameController {
     if (!this.stateService.load()) {
       this.state.player = true;
       return GamePlay.showError('ВНИМАНИЕ! Нет игры для загрузки!');
-    } else {
-      this.state = this.stateService.load()
-      this.state.player = true;
     }
+    this.state = this.stateService.load();
+    this.state.player = true;
+
     this.level = this.state.level;
     this.positionsToDraw = this.state.positions;
     this.theme = this.state.theme;
