@@ -317,10 +317,11 @@ export default class GameController {
       this.onCellEnter(target.position);
       return this.onCellClick(target.position);
     }
+    // Target below and the first row
     if (target.row <= team[random].row
       && target.column < team[random].column && team[random].row <= 1) {
       while (this.stateOfMovement !== 'move') {
-        this.onCellEnter(target.positionTarget -= 1);
+        this.onCellEnter(target.positionTarget += 1);
       }
     }
     // Target has the same row, to the right
@@ -359,7 +360,7 @@ export default class GameController {
         this.onCellEnter(target.positionTarget += 1);
       }
     }
-    // Target below and the first row
+
 
     return this.onCellClick(this.activeCell);
   }
