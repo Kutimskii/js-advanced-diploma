@@ -77,7 +77,6 @@ export default class GameController {
     } else {
       this.allowedTeam = ['daemon', 'vampire', 'undead'];
     }
-
     // Step
     if (this.stateOfMovement === 'move' && this.selectedCell !== null && !this.personIntoActiveCell.length >= 1) {
       this.positionsToDraw.forEach((item) => {
@@ -94,7 +93,7 @@ export default class GameController {
       GameState.from(this.state.player, this.positionsToDraw, this.theme, this.level);
       if (!this.state.player) {
         this.gamePlay.redrawPositions(this.positionsToDraw);
-        return setTimeout(this.stepOfComputer, 1000);
+        return setTimeout(()=>this.stepOfComputer(),500);
       }
       this.gamePlay.deselectCell(this.activeCell);
       return this.gamePlay.redrawPositions(this.positionsToDraw);
@@ -123,7 +122,7 @@ export default class GameController {
         return this.gamePlay.redrawPositions(this.positionsToDraw);
       });
       if (!this.state.player) {
-        return setTimeout(this.stepOfComputer, 1000);
+        return setTimeout(()=>this.stepOfComputer(),500);
       }
       return this.gamePlay.deselectCell(this.activeCell);
     }
@@ -134,7 +133,8 @@ export default class GameController {
     if (this.personIntoActiveCell.length >= 1) {
       isRightType = this.allowedTeam
         .filter((item) => this.personIntoActiveCell[0].character.type === item);
-    }
+    } else return 
+    // Select
     if (isRightType.length >= 1) {
       this.charactersOnField = this.gamePlay.cells
         .filter((item) => item.firstElementChild);
@@ -145,23 +145,30 @@ export default class GameController {
       this.selectedCharacter = this.positionsToDraw
         .filter((element) => element.position === this.selectedCell);
       return this.gamePlay.selectCell(index);
-    } return GamePlay.showError('Выберите доступного персонажа');
+    }else{
+      debugger
+      GamePlay.showError('Выберите доступного персонажа');
+    } 
   }
 
   onCellEnter(index) {
     this.activeCell = index;
+    let move;
     this.personIntoActiveCell = this.positionsToDraw
       .filter((element) => element.position === this.activeCell);
-    const move = this.makeAttackStep(this.selectedCell, this.activeCell);
+      if(this.selectedCell!==null){
+        move = this.makeAttackStep(this.selectedCell, this.activeCell);
+      }
+
     if (this.personIntoActiveCell.length >= 1) {
       this.gamePlay.showCellTooltip(this.infoAbout(this.personIntoActiveCell[0].character), index);
     }
-
     if (this.personIntoActiveCell.length >= 1) {
       this.gamePlay.setCursor('pointer');
+      this.stateOfMovement = null;
     } else {
       this.gamePlay.setCursor('default');
-      this.stateOfMovement = null;
+
     }
 
     if (this.selectedCell !== null && move.step && this.selectedCharacter.length >= 1
@@ -170,6 +177,7 @@ export default class GameController {
       this.gamePlay.selectCell(this.activeCell, 'green');
       this.stateOfMovement = 'move';
     }
+
     if (this.selectedCell !== null && move.attack && this.selectedCell !== index
       && this.personIntoActiveCell.length >= 1 && !this.allowedTeam.includes(
       this.personIntoActiveCell[0].character.type,
@@ -179,15 +187,14 @@ export default class GameController {
       this.stateOfMovement = 'attack';
     }
 
-    if ((this.selectedCell !== null && move.attack === false && move.step === false)
-    || (this.selectedCell !== null
-  && this.personIntoActiveCell.length >= 1
-  && this.selectedCell !== index
-  && !this.allowedTeam.includes(this.personIntoActiveCell[0].character.type)
-  && move.attack === false
-    )) {
+    if ((this.selectedCell !== null && move.attack === false && move.step === false && this.personIntoActiveCell.length < 1))
+  //   || (this.selectedCell !== null
+  // && this.personIntoActiveCell.length >= 1
+  // && this.selectedCell !== index
+  // && !this.allowedTeam.includes(this.personIntoActiveCell[0].character.type)
+  // && move.attack === false
+    {
       this.gamePlay.setCursor('not-allowed');
-      // this.gamePlay.selectCell(this.activeCell);
       this.stateOfMovement = 'restricted';
     }
   }
@@ -269,7 +276,8 @@ export default class GameController {
       || (Math.abs(diff - this.fieldSize * 4) <= radiusAttack && (activeRow === selectedRow - 4));
 
       allowStep = (diff <= radiusStep && (selectedRow === activeRow))
-      || (Math.abs(diff - this.fieldSize) <= radiusStep && (selectedRow !== activeRow));
+      || (Math.abs(diff - this.fieldSize) <= radiusStep && (activeRow === selectedRow + 1))
+      || (Math.abs(diff - this.fieldSize) <= radiusStep && (activeRow === selectedRow - 1))
     }
     return {
       step: allowStep,
@@ -278,6 +286,8 @@ export default class GameController {
   }
 
   stepOfComputer() {
+    debugger
+    this.stateOfMovement === null;
     const team = this.positionsToDraw.filter((item) => (item.character.type === 'vampire' && item.character.health) > 0
       || (item.character.type === 'daemon' && item.character.health) > 0
       || (item.character.type === 'undead' && item.character.health) > 0);
@@ -290,7 +300,7 @@ export default class GameController {
     const random = team
       .findIndex((item) => item.character.health <= 100 && item.character.health > 0);
     const humanTeam = this.positionsToDraw
-      .filter((item) => item.character.type === ('swordsman' && item.character.health) > 0
+      .filter((item) => item.character.type === 'swordsman' && (item.character.health > 0)
       || (item.character.type === 'bowman' && item.character.health) > 0
       || (item.character.type === 'magician' && item.character.health) > 0);
 
@@ -305,7 +315,6 @@ export default class GameController {
       item.diagonal = Math.abs(team[random].row - item.row)
       + Math.abs(team[random].column - item.column);
     });
-    // debugger;
     const target = humanTeam.reduce((min, num) => (min.diagonal < num.diagonal ? min : num));
     target.positionTarget = target.position;
     this.onCellEnter(team[random].position);
@@ -313,33 +322,40 @@ export default class GameController {
     this.onCellEnter(target.position);
 
     if (this.stateOfMovement === 'attack') {
-      return this.onCellClick(target.position);
+      this.onCellEnter(target.position);
+      return this.onCellClick(target.position)
     }
+    // Target has the same row, to the right
     if (target.row === team[random].row && target.column > team[random].column) {
       while (this.stateOfMovement !== 'move') {
         this.onCellEnter(target.positionTarget += 1);
       }
     }
+    // Target has the same row, to the left
     if (target.row === team[random].row && target.column < team[random].column) {
       while (this.stateOfMovement !== 'move') {
         this.onCellEnter(target.positionTarget -= 1);
       }
     }
+    // Target below and to the left
     if (target.row > team[random].row && target.column <= team[random].column) {
       while (this.stateOfMovement !== 'move') {
         this.onCellEnter(target.positionTarget -= 1);
       }
     }
+    // Target higher and to the left
     if (target.row < team[random].row && target.column <= team[random].column) {
       while (this.stateOfMovement !== 'move') {
         this.onCellEnter(target.positionTarget += 1);
       }
     }
+    // Target below and to the right
     if (target.row > team[random].row && target.column >= team[random].column) {
       while (this.stateOfMovement !== 'move') {
         this.onCellEnter(target.positionTarget -= 1);
       }
     }
+    // Target higher and to the right
     if (target.row < team[random].row && target.column >= team[random].column) {
       while (this.stateOfMovement !== 'move') {
         this.onCellEnter(target.positionTarget += 1);
@@ -386,12 +402,9 @@ export default class GameController {
       this.fieldSize - 2,
     );
     this.positionsToDraw = this.positionsPlayer.concat(this.positionsRival);
-    // console.log(this.positionsRival);
-    // console.log(this.positionsToDraw);
-    this.gamePlay.redrawPositions(this.positionsToDraw);
-    GameState.from(true, this.positionsToDraw, this.theme, this.level);
-    this.state = GameState.from(this.state.player, this.positionsToDraw, this.theme, this.level);
-    return this.state;
+    debugger
+    this.state = GameState.from(true, this.positionsToDraw, this.theme, this.level);
+    return this.gamePlay.redrawPositions(this.positionsToDraw);
   }
 
   gameOver() {
