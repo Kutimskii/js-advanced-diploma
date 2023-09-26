@@ -26,6 +26,7 @@ export default class GameController {
     this.damage = 0;
     this.level = 1;
     this.score = 0;
+    this.positionsToDraw = [];
     this.positionsPlayer = this.createTeam(
       generateTeam(playerTypes, this.level, 3),
       this.fieldSize,
@@ -43,7 +44,8 @@ export default class GameController {
   createTeam(anyteam, SizeOffield, numbColumn) {
     const randomPosition = (Math.floor(Math.random() * SizeOffield)) * SizeOffield
     + numbColumn + Math.floor(Math.random() * 2);
-    if (this.positionedChar.find((item) => item.position === randomPosition)) {
+    if (this.positionedChar.find((item) => item.position === randomPosition)
+    || this.positionsToDraw.find((el) => el.position === randomPosition)) {
       return this.createTeam(anyteam, SizeOffield, numbColumn);
     }
     this.positionedChar.splice(
@@ -93,7 +95,7 @@ export default class GameController {
       GameState.from(this.state.player, this.positionsToDraw, this.theme, this.level);
       if (!this.state.player) {
         this.gamePlay.redrawPositions(this.positionsToDraw);
-        return setTimeout(()=>this.stepOfComputer(),500);
+        return setTimeout(() => this.stepOfComputer(), 1000);
       }
       this.gamePlay.deselectCell(this.activeCell);
       return this.gamePlay.redrawPositions(this.positionsToDraw);
@@ -122,7 +124,7 @@ export default class GameController {
         return this.gamePlay.redrawPositions(this.positionsToDraw);
       });
       if (!this.state.player) {
-        return setTimeout(()=>this.stepOfComputer(),500);
+        return setTimeout(() => this.stepOfComputer(), 1000);
       }
       return this.gamePlay.deselectCell(this.activeCell);
     }
@@ -133,7 +135,7 @@ export default class GameController {
     if (this.personIntoActiveCell.length >= 1) {
       isRightType = this.allowedTeam
         .filter((item) => this.personIntoActiveCell[0].character.type === item);
-    } else return 
+    } else return isRightType;
     // Select
     if (isRightType.length >= 1) {
       this.charactersOnField = this.gamePlay.cells
@@ -145,10 +147,8 @@ export default class GameController {
       this.selectedCharacter = this.positionsToDraw
         .filter((element) => element.position === this.selectedCell);
       return this.gamePlay.selectCell(index);
-    }else{
-      debugger
-      GamePlay.showError('Выберите доступного персонажа');
-    } 
+    }
+    return GamePlay.showError('Выберите доступного персонажа');
   }
 
   onCellEnter(index) {
@@ -156,9 +156,9 @@ export default class GameController {
     let move;
     this.personIntoActiveCell = this.positionsToDraw
       .filter((element) => element.position === this.activeCell);
-      if(this.selectedCell!==null){
-        move = this.makeAttackStep(this.selectedCell, this.activeCell);
-      }
+    if (this.selectedCell !== null) {
+      move = this.makeAttackStep(this.selectedCell, this.activeCell);
+    }
 
     if (this.personIntoActiveCell.length >= 1) {
       this.gamePlay.showCellTooltip(this.infoAbout(this.personIntoActiveCell[0].character), index);
@@ -168,7 +168,6 @@ export default class GameController {
       this.stateOfMovement = null;
     } else {
       this.gamePlay.setCursor('default');
-
     }
 
     if (this.selectedCell !== null && move.step && this.selectedCharacter.length >= 1
@@ -187,13 +186,8 @@ export default class GameController {
       this.stateOfMovement = 'attack';
     }
 
-    if ((this.selectedCell !== null && move.attack === false && move.step === false && this.personIntoActiveCell.length < 1))
-  //   || (this.selectedCell !== null
-  // && this.personIntoActiveCell.length >= 1
-  // && this.selectedCell !== index
-  // && !this.allowedTeam.includes(this.personIntoActiveCell[0].character.type)
-  // && move.attack === false
-    {
+    if ((this.selectedCell !== null && move.attack === false
+      && move.step === false && this.personIntoActiveCell.length < 1)) {
       this.gamePlay.setCursor('not-allowed');
       this.stateOfMovement = 'restricted';
     }
@@ -277,7 +271,7 @@ export default class GameController {
 
       allowStep = (diff <= radiusStep && (selectedRow === activeRow))
       || (Math.abs(diff - this.fieldSize) <= radiusStep && (activeRow === selectedRow + 1))
-      || (Math.abs(diff - this.fieldSize) <= radiusStep && (activeRow === selectedRow - 1))
+      || (Math.abs(diff - this.fieldSize) <= radiusStep && (activeRow === selectedRow - 1));
     }
     return {
       step: allowStep,
@@ -286,8 +280,6 @@ export default class GameController {
   }
 
   stepOfComputer() {
-    debugger
-    this.stateOfMovement === null;
     const team = this.positionsToDraw.filter((item) => (item.character.type === 'vampire' && item.character.health) > 0
       || (item.character.type === 'daemon' && item.character.health) > 0
       || (item.character.type === 'undead' && item.character.health) > 0);
@@ -300,9 +292,9 @@ export default class GameController {
     const random = team
       .findIndex((item) => item.character.health <= 100 && item.character.health > 0);
     const humanTeam = this.positionsToDraw
-      .filter((item) => item.character.type === 'swordsman' && (item.character.health > 0)
-      || (item.character.type === 'bowman' && item.character.health) > 0
-      || (item.character.type === 'magician' && item.character.health) > 0);
+      .filter((item) => ((item.character.type === 'swordsman') && (item.character.health > 0))
+      || ((item.character.type === 'bowman') && (item.character.health)) > 0
+      || ((item.character.type === 'magician') && (item.character.health)) > 0);
 
     team[random].row = Math.floor(Math.abs(team[random].position / this.fieldSize));
     team[random].column = team[random].position % this.fieldSize;
@@ -323,7 +315,13 @@ export default class GameController {
 
     if (this.stateOfMovement === 'attack') {
       this.onCellEnter(target.position);
-      return this.onCellClick(target.position)
+      return this.onCellClick(target.position);
+    }
+    if (target.row <= team[random].row
+      && target.column < team[random].column && team[random].row <= 1) {
+      while (this.stateOfMovement !== 'move') {
+        this.onCellEnter(target.positionTarget -= 1);
+      }
     }
     // Target has the same row, to the right
     if (target.row === team[random].row && target.column > team[random].column) {
@@ -361,6 +359,8 @@ export default class GameController {
         this.onCellEnter(target.positionTarget += 1);
       }
     }
+    // Target below and the first row
+
     return this.onCellClick(this.activeCell);
   }
 
@@ -402,7 +402,6 @@ export default class GameController {
       this.fieldSize - 2,
     );
     this.positionsToDraw = this.positionsPlayer.concat(this.positionsRival);
-    debugger
     this.state = GameState.from(true, this.positionsToDraw, this.theme, this.level);
     return this.gamePlay.redrawPositions(this.positionsToDraw);
   }
