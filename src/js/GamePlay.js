@@ -196,6 +196,13 @@ export default class GamePlay {
       .filter((o) => o.startsWith('selected')));
   }
 
+  deselectCellAll() {
+    this.cells.forEach((cell) => {
+      cell.classList.remove(...Array.from(cell.classList)
+        .filter((o) => o.startsWith('selected')));
+    });
+  }
+
   showCellTooltip(message, index) {
     this.cells[index].title = message;
   }
