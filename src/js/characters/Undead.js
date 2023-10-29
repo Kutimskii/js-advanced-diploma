@@ -7,6 +7,8 @@ export default class Undead extends Character {
     this.attack = 40;
     this.level = level;
     this.defence = 10;
+    this.radiusAttack = 1;
+    this.radiusStep = 4;
     for (let i = 1; i < this.level; i += 1) {
       this.attack = Math.max(this.attack, this.attack * ((80 + health) / 100));
       this.defence = Math.max(this.defence, this.defence * ((80 + health) / 100));

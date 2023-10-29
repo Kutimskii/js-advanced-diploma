@@ -19,11 +19,14 @@ export default class GameController {
     this.onCellClick = this.onCellClick.bind(this);
     this.stepOfComputer = this.stepOfComputer.bind(this);
     this.selectedCell = null;
-    this.allowedTeam = [];
+    this.allowedTeam = ['swordsman', 'bowman', 'magician'];
     this.personIntoActiveCell = [];
     this.selectedCharacter = [];
-    this.stateOfMovement = null;
-    this.damage = 0;
+    this.stateOfMovement = {
+      move: null,
+      attack: null,
+      restricted: null,
+    };
     this.level = 1;
     this.score = 0;
     this.positionsToDraw = [];
@@ -65,7 +68,6 @@ export default class GameController {
     this.makeSubscribe();
     this.gamePlay.drawUi(themes.prairie);
     this.gamePlay.redrawPositions(this.positionsToDraw);
-    this.allowedTeam = ['swordsman', 'bowman', 'magician'];
     return GameState.from(true, this.positionsToDraw, this.theme, this.level);
   }
 
@@ -76,82 +78,89 @@ export default class GameController {
     } else {
       this.allowedTeam = ['daemon', 'vampire', 'undead'];
     }
-    // Step
-    if (this.stateOfMovement === 'move' && this.selectedCell !== null && !this.personIntoActiveCell.length >= 1) {
-      this.positionsToDraw.forEach((item) => {
-        if (item.position === this.selectedCell) {
-          item.position = this.activeCell;
-        }
-      });
-      if (this.state.player) {
-        this.state.player = false;
-      } else this.state.player = true;
-      this.gamePlay.deselectCellAll();
-      this.selectedCell = null;
-      this.state = GameState.from(this.state.player, this.positionsToDraw, this.theme, this.level);
-      if (!this.state.player) {
-        this.gamePlay.redrawPositions(this.positionsToDraw);
-        return setTimeout(() => this.stepOfComputer(), 1000);
-      }
-      this.gamePlay.deselectCellAll();
-      return this.gamePlay.redrawPositions(this.positionsToDraw);
-    }
-    // Attack
-    if (this.stateOfMovement === 'attack' && this.selectedCell !== null) {
-      this.damage = Math.ceil(Math.max(
-        this.selectedCharacter[0].character.attack
-      - this.personIntoActiveCell[0].character.defence,
-        this.selectedCharacter[0].character.attack * 0.1,
-      ));
-      if (this.state.player) {
-        this.state.player = false;
-      } else this.state.player = true;
-      this.gamePlay.deselectCellAll();
-      this.selectedCell = null;
-      this.gamePlay.showDamage(this.activeCell, this.damage).then(() => {
+
+    if (this.selectedCell !== null) {
+      // Step
+      if (this.stateOfMovement.move && !this.personIntoActiveCell.length >= 1) {
         this.positionsToDraw.forEach((item) => {
-          if (item.position === index) {
-            item.character.health -= this.damage;
+          if (item.position === this.selectedCell) {
+            item.position = this.activeCell;
           }
         });
-        this.positionsToDraw = this.positionsToDraw.filter((item) => item.character.health > 0);
-        const stateHumanTeam = this.positionsToDraw.filter((item) => ((item.character.type === 'swordsman') && (item.character.health > 0))
-        || ((item.character.type === 'bowman') && (item.character.health)) > 0
-        || ((item.character.type === 'magician') && (item.character.health)) > 0);
-        if (stateHumanTeam.length === 0) return this.gameOver();
-        this.gamePlay.redrawPositions(this.positionsToDraw);
-        this.state = GameState.from(
-          this.state.player,
-          this.positionsToDraw,
-          this.theme,
-          this.level,
-        );
-        return this.state;
-      });
-      if (!this.state.player) {
-        return setTimeout(() => this.stepOfComputer(), 1000);
+        this.gamePlay.deselectCellAll();
+        this.selectedCell = null;
+        if (this.state.player) {
+          this.state.player = !this.state.player;
+          this.state = GameState.from(
+            this.state.player,
+            this.positionsToDraw,
+            this.theme,
+            this.level,
+          );
+          this.gamePlay.redrawPositions(this.positionsToDraw);
+          return setTimeout(() => this.stepOfComputer(), 1000);
+        }
+        this.state.player = true;
+        return this.gamePlay.redrawPositions(this.positionsToDraw);
       }
-      return this.gamePlay.deselectCellAll();
+      // Attack
+      if (this.stateOfMovement.attack) {
+        let damage = 0;
+        damage = Math.ceil(Math.max(
+          this.selectedCharacter[0].character.attack
+        - this.personIntoActiveCell[0].character.defence,
+          this.selectedCharacter[0].character.attack * 0.1,
+        ));
+        this.gamePlay.deselectCellAll();
+        this.selectedCell = null;
+        if (this.state.player) {
+          this.state.player = !this.state.player;
+        } else this.state.player = true;
+        this.gamePlay.showDamage(this.activeCell, damage).then(() => {
+          this.positionsToDraw.forEach((item) => {
+            if (item.position === index) {
+              item.character.health -= damage;
+            }
+          });
+          this.positionsToDraw = this.positionsToDraw.filter((item) => item.character.health > 0);
+          const stateHumanTeam = this.positionsToDraw.filter((item) => ((item.character.type === 'swordsman') && (item.character.health > 0))
+          || ((item.character.type === 'bowman') && (item.character.health)) > 0
+          || ((item.character.type === 'magician') && (item.character.health)) > 0);
+          if (stateHumanTeam.length === 0) return this.gameOver();
+          this.gamePlay.redrawPositions(this.positionsToDraw);
+          this.state = GameState.from(
+            this.state.player,
+            this.positionsToDraw,
+            this.theme,
+            this.level,
+          );
+          return this.state;
+        });
+        if (!this.state.player) {
+          return setTimeout(() => this.stepOfComputer(), 1000);
+        }
+        return this.gamePlay.deselectCellAll();
+      }
+      if (this.stateOfMovement.restricted) {
+        return GamePlay.showError('Недопустимое действие');
+      }
     }
-    if (this.stateOfMovement === 'restricted' && this.selectedCell !== null) {
-      return GamePlay.showError('Недопустимое действие');
-    }
-
+    // Select
     if (this.personIntoActiveCell.length >= 1) {
       isRightType = this.allowedTeam
         .filter((item) => this.personIntoActiveCell[0].character.type === item);
-    } else return isRightType;
-    // Select
-    if (isRightType.length >= 1) {
-      this.charactersOnField = this.gamePlay.cells
-        .filter((item) => item.firstElementChild);
-      this.gamePlay.deselectCellAll();
-      this.selectedCell = index;
-      this.selectedCharacter = this.positionsToDraw
-        .filter((element) => element.position === this.selectedCell);
-      return this.gamePlay.selectCell(index);
+      if (isRightType.length >= 1) {
+        this.charactersOnField = this.gamePlay.cells
+          .filter((item) => item.firstElementChild);
+        this.gamePlay.deselectCellAll();
+        this.selectedCell = index;
+        this.selectedCharacter = this.positionsToDraw
+          .filter((element) => element.position === this.selectedCell);
+        return this.gamePlay.selectCell(index);
+      }
+      return GamePlay.showError('Выберите доступного персонажа');
     }
-    return GamePlay.showError('Выберите доступного персонажа');
+    return isRightType;
   }
 
   onCellEnter(index) {
@@ -165,41 +174,48 @@ export default class GameController {
 
     if (this.personIntoActiveCell.length >= 1) {
       this.gamePlay.showCellTooltip(this.infoAbout(this.personIntoActiveCell[0].character), index);
-    }
-    if (this.personIntoActiveCell.length >= 1 && this.allowedTeam.includes(
-      this.personIntoActiveCell[0].character.type,
-    )) {
-      this.gamePlay.setCursor('pointer');
-      this.stateOfMovement = null;
-      return this.stateOfMovement;
+      if (this.allowedTeam.includes(this.personIntoActiveCell[0].character.type)) {
+        this.gamePlay.setCursor('pointer');
+        this.stateOfMovement = {
+          move: null,
+          attack: null,
+          restricted: null,
+        };
+        return this.stateOfMovement;
+      }
     }
     this.gamePlay.setCursor('default');
-
-    if (this.selectedCell !== null && move.step && this.selectedCharacter.length >= 1
-      && !this.personIntoActiveCell.length >= 1) {
-      this.gamePlay.setCursor('pointer');
-      this.gamePlay.selectCell(this.activeCell, 'green');
-      this.stateOfMovement = 'move';
-      return this.stateOfMovement;
-    }
-
-    if (this.selectedCell !== null && move.attack && this.selectedCell !== index
-      && this.personIntoActiveCell.length >= 1 && !this.allowedTeam.includes(
-      this.personIntoActiveCell[0].character.type,
-    )) {
-      this.gamePlay.setCursor('crosshair');
-      this.gamePlay.selectCell(this.activeCell, 'red');
-      this.stateOfMovement = 'attack';
-      return this.stateOfMovement;
-    }
-
-    if ((this.selectedCell !== null && move.attack === false
-      && move.step === false && this.personIntoActiveCell.length < 1)
+    //
+    if (this.selectedCell !== null) {
+      if (move.step && this.selectedCharacter.length >= 1
+        && !this.personIntoActiveCell.length >= 1) {
+        this.gamePlay.setCursor('pointer');
+        this.gamePlay.selectCell(this.activeCell, 'green');
+        this.stateOfMovement.move = true;
+        this.stateOfMovement.attack = false;
+        this.stateOfMovement.restricted = false;
+        return this.stateOfMovement;
+      }
+      if (move.attack && this.selectedCell !== index
+        && this.personIntoActiveCell.length >= 1 && !this.allowedTeam.includes(
+        this.personIntoActiveCell[0].character.type,
+      )) {
+        this.gamePlay.setCursor('crosshair');
+        this.gamePlay.selectCell(this.activeCell, 'red');
+        this.stateOfMovement.attack = true;
+        this.stateOfMovement.move = false;
+        this.stateOfMovement.restricted = false;
+        return this.stateOfMovement;
+      }
+      if ((move.attack === false && move.step === false && this.personIntoActiveCell.length < 1)
       || (this.selectedCell !== null && move.attack === false)
       || (this.selectedCell !== null && move.step === false)) {
-      this.gamePlay.setCursor('not-allowed');
-      this.stateOfMovement = 'restricted';
-      return this.stateOfMovement;
+        this.gamePlay.setCursor('not-allowed');
+        this.stateOfMovement.attack = false;
+        this.stateOfMovement.move = false;
+        this.stateOfMovement.restricted = true;
+        return this.stateOfMovement;
+      }
     }
     return this.stateOfMovement;
   }
@@ -235,16 +251,14 @@ export default class GameController {
     }
     const diff = Math.abs(selectedPerson - activeCell);
     const type = testType || this.gamePlay.cells[selectedPerson].firstElementChild.classList[1];
-    let radiusAttack = 0;
-    let radiusStep = 0;
+    const { radiusAttack } = this.selectedCharacter[0].character;
+    const { radiusStep } = this.selectedCharacter[0].character;
     let allowAttack = null;
     let allowStep = null;
     const selectedRow = Math.floor(Math.abs(selectedPerson / this.fieldSize));
     const activeRow = Math.floor(Math.abs(activeCell / this.fieldSize));
 
     if (type === 'swordsman' || type === 'undead') {
-      radiusAttack = 1;
-      radiusStep = 4;
       allowAttack = (diff <= radiusAttack && (selectedRow === activeRow))
       || (Math.abs(diff - this.fieldSize) <= radiusAttack && (selectedRow !== activeRow));
       allowStep = ((diff <= radiusStep) && (selectedRow === activeRow))
@@ -258,8 +272,6 @@ export default class GameController {
       || (Math.abs(diff - this.fieldSize * 4) <= radiusStep && (activeRow === selectedRow - 4));
     }
     if (type === 'bowman' || type === 'vampire') {
-      radiusAttack = 2;
-      radiusStep = 2;
       allowAttack = (diff <= radiusAttack && (selectedRow === activeRow))
       || (Math.abs(diff - this.fieldSize) <= radiusAttack && (activeRow === selectedRow + 1))
       || (Math.abs(diff - this.fieldSize) <= radiusAttack && (activeRow === selectedRow - 1))
@@ -268,8 +280,6 @@ export default class GameController {
       allowStep = allowAttack;
     }
     if (type === 'magician' || type === 'daemon') {
-      radiusAttack = 4;
-      radiusStep = 1;
       allowAttack = (diff <= radiusAttack && (selectedRow === activeRow))
       || (Math.abs(diff - this.fieldSize) <= radiusAttack && (activeRow === selectedRow + 1))
       || (Math.abs(diff - this.fieldSize) <= radiusAttack && (activeRow === selectedRow - 1))
@@ -294,11 +304,12 @@ export default class GameController {
     const team = this.positionsToDraw.filter((item) => (item.character.type === 'vampire' && item.character.health) > 0
       || (item.character.type === 'daemon' && item.character.health) > 0
       || (item.character.type === 'undead' && item.character.health) > 0);
+
+    if (this.level === 4 && team.length === 0) {
+      return this.gameOver();
+    }
     if (team.length === 0) {
       return this.nextLevel();
-    }
-    if (this.level > 4) {
-      return this.gameOver();
     }
     const random = team
       .findIndex((item) => item.character.health <= 100 && item.character.health > 0);
@@ -324,54 +335,53 @@ export default class GameController {
     this.onCellClick(team[random].position);
     this.onCellEnter(target.position);
 
-    if (this.stateOfMovement === 'attack') {
+    if (this.stateOfMovement.attack) {
       this.onCellEnter(target.position);
       return this.onCellClick(target.position);
     }
     // Target below and the first row
     if (target.row <= team[random].row
       && target.column < team[random].column && team[random].row <= 1) {
-      while (this.stateOfMovement !== 'move') {
+      while (!this.stateOfMovement.move) {
         this.onCellEnter(target.positionTarget += 1);
       }
     }
     // Target has the same row, to the right
     if (target.row === team[random].row && target.column > team[random].column) {
-      while (this.stateOfMovement !== 'move') {
+      while (!this.stateOfMovement.move) {
         this.onCellEnter(target.positionTarget += 1);
       }
     }
     // Target has the same row, to the left
     if (target.row === team[random].row && target.column < team[random].column) {
-      while (this.stateOfMovement !== 'move') {
+      while (!this.stateOfMovement.move) {
         this.onCellEnter(target.positionTarget -= 1);
       }
     }
     // Target below and to the left
     if (target.row > team[random].row && target.column <= team[random].column) {
-      while (this.stateOfMovement !== 'move') {
+      while (!this.stateOfMovement.move) {
         this.onCellEnter(target.positionTarget -= 1);
       }
     }
     // Target higher and to the left
     if (target.row < team[random].row && target.column <= team[random].column) {
-      while (this.stateOfMovement !== 'move') {
+      while (!this.stateOfMovement.move) {
         this.onCellEnter(target.positionTarget += 1);
       }
     }
     // Target below and to the right
     if (target.row > team[random].row && target.column >= team[random].column) {
-      while (this.stateOfMovement !== 'move') {
+      while (!this.stateOfMovement.move) {
         this.onCellEnter(target.positionTarget -= 1);
       }
     }
     // Target higher and to the right
     if (target.row < team[random].row && target.column >= team[random].column) {
-      while (this.stateOfMovement !== 'move') {
+      while (!this.stateOfMovement.move) {
         this.onCellEnter(target.positionTarget += 1);
       }
     }
-
     return this.onCellClick(this.activeCell);
   }
 
@@ -399,7 +409,9 @@ export default class GameController {
       this.fieldSize,
       0,
     );
+
     this.positionsPlayer = this.positionsToDraw.slice(0, 3);
+
     this.positionsPlayer.forEach((hero, index) => {
       hero.character.level = this.level;
       hero.character.attack = Math.ceil(Math.max(hero.character.attack, hero.character.attack
@@ -413,6 +425,12 @@ export default class GameController {
       }
       hero.position = positions[index].position;
     });
+    if (this.positionsPlayer.length < 3) {
+      for (let i = 1; i < positions.length; i = this.positionsPlayer.length) {
+        this.positionsPlayer.push(positions[positions.length - i]);
+      }
+    }
+
     this.positionsRival = this.createTeam(
       generateTeam(rivalTypes, this.level, 3),
       this.fieldSize,
